@@ -1,30 +1,40 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>時間割作成支援アプリ</title>
+    <title>高機能 時間割作成支援システム</title>
     <style>
         :root {
-            --sidebar-width: 300px;
-            --header-height: 40px;
-            --cell-width: 100px;
-            --cell-height: 60px;
+            --sidebar-width: 320px;
+            --stats-height: 150px;
+            --header-height: 50px;
+            --cell-width: 140px;
+            --cell-height: 90px;
             --border-color: #ccc;
-            --bg-color: #f9f9f9;
-            --primary-color: #4a90e2;
-            --error-bg: #ffcccc;
+            --bg-color: #f5f7fa;
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --error-bg: #ffcfcf;
+            --warn-bg: #fff3cd;
+            --success-bg: #d4edda;
             --ng-bg: #e0e0e0;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
             display: flex;
             height: 100vh;
             overflow: hidden;
             background-color: var(--bg-color);
+            color: #333;
         }
 
         /* Sidebar */
@@ -34,620 +44,898 @@
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            padding: 10px;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
             z-index: 10;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
         }
 
-        #sidebar h2 {
+        #logo-area {
+            padding: 15px;
+            background: var(--primary-color);
+            color: white;
+        }
+
+        #logo-area h1 {
+            margin: 0;
             font-size: 18px;
-            margin-bottom: 10px;
-            color: #333;
         }
 
-        .control-panel {
+        #logo-area p {
+            margin: 5px 0 0;
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #eee;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 12px;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-tab.active {
+            background: white;
+            border-bottom: 2px solid var(--accent-color);
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .panel-section {
             margin-bottom: 20px;
-            padding-bottom: 20px;
+        }
+
+        .panel-section h3 {
+            font-size: 14px;
             border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 0;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 3px;
+            color: #666;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+
+        .dash-item {
+            font-size: 12px;
+            padding: 5px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .dash-item.alert {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+
+        .dash-item.warn {
+            color: #f57c00;
         }
 
         button {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
+            padding: 8px;
+            background: var(--accent-color);
+            color: white;
             border: none;
             border-radius: 4px;
-            background-color: var(--primary-color);
-            color: white;
-            font-size: 14px;
             cursor: pointer;
-            transition: background-color 0.2s;
+            margin-top: 5px;
         }
 
         button:hover {
-            background-color: #357abd;
+            opacity: 0.9;
         }
 
-        button.secondary {
-            background-color: #6c757d;
-        }
-        
-        button.secondary:hover {
-            background-color: #5a6268;
+        button.danger {
+            background: #e74c3c;
         }
 
-        #teacher-list {
+        /* Main Area */
+        #main-area {
             flex: 1;
-            overflow-y: auto;
-        }
-
-        .teacher-item {
-            padding: 8px;
-            border-bottom: 1px solid #eee;
-            font-size: 14px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
         }
 
-        .teacher-item input {
-            border: 1px solid #ddd;
-            padding: 4px;
-            border-radius: 3px;
-            width: 45%;
-        }
-
-        .teacher-ng-btn {
-            font-size: 10px;
-            padding: 2px 5px;
-            background: #eee;
-            color: #333;
-            width: auto;
-            margin: 0;
-        }
-        
-        .teacher-ng-btn.active {
-            background: #ff9800;
-            color: white;
-        }
-
-        /* Main Content */
-        #main-content {
+        /* Views */
+        .view-container {
             flex: 1;
             overflow: auto;
-            position: relative;
-            background: white;
+            padding: 20px;
+            display: none;
+            /* Toggled by JS */
         }
 
-        /* Timetable Grid */
-        #timetable {
+        .view-container.active {
+            display: block;
+        }
+
+        /* Timetable View specifically needs to remove padding for full scroll */
+        #view-timetable {
+            padding: 0;
+            overflow: auto;
+        }
+
+        /* 3. Grid Styles */
+        table.data-table {
             border-collapse: collapse;
+            width: 100%;
+            background: white;
+            font-size: 12px;
+        }
+
+        table.data-table th,
+        table.data-table td {
+            border: 1px solid var(--border-color);
+            padding: 5px;
+            text-align: center;
+        }
+
+        table.data-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+
+        /* The Big Schedule Grid */
+        #schedule-grid {
+            border-collapse: separate;
+            /* For sticky headers */
+            border-spacing: 0;
             table-layout: fixed;
         }
 
-        #timetable th, #timetable td {
-            border: 1px solid var(--border-color);
+        #schedule-grid th,
+        #schedule-grid td {
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
             width: var(--cell-width);
             height: var(--cell-height);
-            text-align: center;
-            font-size: 12px;
             padding: 2px;
-            position: relative;
+            vertical-align: top;
+            box-sizing: border-box;
+            background: white;
         }
 
-        #timetable th {
-            background-color: #f0f0f0;
-            font-weight: bold;
+        /* Sticky Headers */
+        #schedule-grid thead th {
             position: sticky;
             top: 0;
             z-index: 5;
+            background: #f1f3f5;
+            border-top: 1px solid var(--border-color);
         }
-        
-        #timetable th.row-header {
+
+        #schedule-grid .row-header {
             position: sticky;
             left: 0;
             z-index: 6;
-            background-color: #f0f0f0;
-        }
-        
-        #timetable th.corner {
-            z-index: 7;
-            left: 0;
-            top: 0;
+            background: #f1f3f5;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: var(--cell-height);
+            border-left: 1px solid var(--border-color);
         }
 
-        .cell-content {
-            width: 100%;
-            height: 100%;
+        #schedule-grid .corner-header {
+            position: sticky;
+            top: 0;
+            left: 0;
+            z-index: 7;
+            background: #e9ecef;
+            border-left: 1px solid var(--border-color);
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* Cell Content */
+        .cell-inner {
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-        }
-        
-        .cell-content select {
-            width: 95%;
-            font-size: 11px;
-            margin-bottom: 2px;
-            border: none;
-            background: transparent;
-            text-align: center;
+            gap: 2px;
+            height: 100%;
         }
 
+        .cell-inner select {
+            font-size: 11px;
+            border: 1px solid #eee;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .cell-inner select:hover {
+            border-color: #ccc;
+        }
+
+        /* Cell States */
         .cell-error {
             background-color: var(--error-bg) !important;
+            box-shadow: inset 0 0 0 2px #ff6b6b;
         }
-        
+
         .cell-ng {
-             background-color: var(--ng-bg);
-             color: #999;
-             pointer-events: none;
+            background-color: var(--ng-bg) !important;
+            pointer-events: none;
+            opacity: 0.6;
         }
 
-        /* Modal for NG setting */
-        #ng-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 100;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        #ng-modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 5px;
-            width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        
-        .ng-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr); /* Header + 6 periods */
-            gap: 5px;
-            margin-top: 10px;
-        }
-        
-        .ng-cell {
-            border: 1px solid #ddd;
-            padding: 5px;
-            text-align: center;
-            cursor: pointer;
-        }
-        
-        .ng-cell.header {
-            background: #eee;
+        /* Stats Table in Curriculum View */
+        .stat-ok {
+            color: green;
             font-weight: bold;
-            cursor: default;
-        }
-        
-        .ng-cell.selected {
-            background: #ff9800;
-            color: white;
         }
 
+        .stat-bad {
+            color: red;
+            font-weight: bold;
+        }
     </style>
 </head>
+
 <body>
 
-<div id="sidebar">
-    <h2>操作パネル</h2>
-    <div class="control-panel">
-        <button onclick="autoAssign()" title="空いている枠にランダムに割り当てます">簡易自動割り当て</button>
-        <button class="secondary" onclick="resetSchedule()">リセット</button>
-        <button class="secondary" onclick="exportCSV()">CSV保存(簡易)</button>
-    </div>
-    
-    <h2>教員一覧</h2>
-    <div id="teacher-list">
-        <!-- Teacher items inserted here -->
-    </div>
-</div>
-
-<div id="main-content">
-    <table id="timetable">
-        <thead>
-            <!-- Headers generated by JS -->
-        </thead>
-        <tbody>
-            <!-- Rows generated by JS -->
-        </tbody>
-    </table>
-</div>
-
-<!-- NG Setting Modal -->
-<div id="ng-modal">
-    <div id="ng-modal-content">
-        <h3 id="ng-modal-title">NGタイム設定</h3>
-        <p>クリックしてNG（出張・不可）の時間帯を設定してください。</p>
-        <div id="ng-grid" class="ng-grid">
-            <!-- Grid generated by JS -->
+    <div id="sidebar">
+        <div id="logo-area">
+            <h1>TimeTable Pro</h1>
+            <p>単一ファイル型 高機能時間割システム</p>
         </div>
-        <div style="margin-top: 20px; text-align: right;">
-            <button onclick="closeNgModal()">閉じる</button>
+
+        <div class="nav-tabs">
+            <div class="nav-tab active" onclick="switchView('timetable')">時間割</div>
+            <div class="nav-tab" onclick="switchView('curriculum')">単位設定</div>
+            <div class="nav-tab" onclick="switchView('teachers')">教員設定</div>
+            <div class="nav-tab" onclick="switchView('settings')">基本設定</div>
         </div>
-    </div>
-</div>
 
-<script>
-/**
- * Data Structures
- */
-const GRADES = 3;
-const CLASSES_PER_GRADE = 4;
-const PERIODS = 6;
-const DAYS = ['月', '火', '水', '木', '金'];
-const SUBJECTS = ['国語', '数学', '英語', '理科', '社会', '体育', '美術', '音楽', '技術', '家庭', 'その他'];
+        <div class="sidebar-content" id="panel-content">
+            <!-- Dynamic Content based on View -->
+            <div id="sidebar-dashboard">
+                <h3>システム状態</h3>
+                <div id="dashboard-stats">
+                    <!-- Inserted by JS -->
+                </div>
 
-// Generate Classes
-const classList = [];
-for (let g = 1; g <= GRADES; g++) {
-    for (let c = 1; c <= CLASSES_PER_GRADE; c++) {
-        classList.push(`${g}-${c}`);
-    }
-}
-classList.push("特支"); // Special Needs Class
-
-// Initial Teachers Data
-let teachers = Array.from({length: 30}, (_, i) => ({
-    id: `t${i+1}`,
-    name: `教員${i+1}`,
-    subject: SUBJECTS[i % SUBJECTS.length],
-    ng: {} // key: "DayIndex-PeriodIndex" (e.g. "0-1" for Mon 1st period)
-}));
-
-// Schedule Data: Map "ClassID-DayIndex-PeriodIndex" -> { teacherId: string }
-let schedule = {};
-
-
-/**
- * Initialization
- */
-window.onload = function() {
-    renderTeacherList();
-    renderTimetable();
-};
-
-/**
- * Rendering Logic
- */
-function renderTeacherList() {
-    const listEl = document.getElementById('teacher-list');
-    listEl.innerHTML = '';
-    
-    teachers.forEach(t => {
-        const div = document.createElement('div');
-        div.className = 'teacher-item';
-        div.innerHTML = `
-            <div>
-                <input type="text" value="${t.name}" onchange="updateTeacherName('${t.id}', this.value)" placeholder="名前">
-                <input type="text" value="${t.subject}" onchange="updateTeacherSubject('${t.id}', this.value)" placeholder="教科" style="width: 30%;">
+                <div style="margin-top:20px;">
+                    <h3>ショートカット</h3>
+                    <button onclick="autoAssignNaive()">簡易自動充填</button>
+                    <button onclick="clearSchedule()" class="danger" style="margin-top:10px;">全クリア</button>
+                    <button onclick="exportCSV()" style="margin-top:10px; background:#27ae60;">CSV保存</button>
+                </div>
             </div>
-            <button class="teacher-ng-btn" onclick="openNgModal('${t.id}')">NG設定</button>
-        `;
-        listEl.appendChild(div);
-    });
-}
+        </div>
+    </div>
 
-function renderTimetable() {
-    const table = document.getElementById('timetable');
-    table.innerHTML = '';
-    
-    // Header Row 1: Days (spanning all periods)
-    const thead = document.createElement('thead');
-    const headerRow1 = document.createElement('tr');
-    
-    // Corner cell
-    const corner = document.createElement('th');
-    corner.className = 'corner';
-    corner.rowSpan = 2;
-    corner.textContent = 'クラス';
-    corner.style.width = '80px';
-    headerRow1.appendChild(corner);
+    <div id="main-area">
+        <!-- View: Timetable -->
+        <div id="view-timetable" class="view-container active">
+            <table id="schedule-grid">
+                <!-- JS Generated -->
+            </table>
+        </div>
 
-    DAYS.forEach(d => {
-        const th = document.createElement('th');
-        th.colSpan = PERIODS;
-        th.textContent = d;
-        headerRow1.appendChild(th);
-    });
-    thead.appendChild(headerRow1);
+        <!-- View: Curriculum -->
+        <div id="view-curriculum" class="view-container">
+            <h2>カリキュラム設定（週当たり必要コマ数）</h2>
+            <p>各学年の教科ごとの必要単位数を入力してください。</p>
+            <div id="curriculum-editor"></div>
+        </div>
 
-    // Header Row 2: Periods
-    const headerRow2 = document.createElement('tr');
-    DAYS.forEach(() => {
-        for(let p=1; p<=PERIODS; p++) {
-            const th = document.createElement('th');
-            th.textContent = p;
-            headerRow2.appendChild(th);
-        }
-    });
-    thead.appendChild(headerRow2);
-    table.appendChild(thead);
+        <!-- View: Teachers -->
+        <div id="view-teachers" class="view-container">
+            <h2>教員管理</h2>
+            <p>名前、持ちコマ上限、担当教科を設定します。</p>
+            <div id="teachers-editor"></div>
+        </div>
 
-    // Body: Classes
-    const tbody = document.createElement('tbody');
-    classList.forEach(cls => {
-        const tr = document.createElement('tr');
-        
-        // Class Name Header
-        const resultTh = document.createElement('th');
-        resultTh.className = 'row-header';
-        resultTh.textContent = cls;
-        tr.appendChild(resultTh);
+        <!-- View: Settings -->
+        <div id="view-settings" class="view-container">
+            <h2>基本設定</h2>
+            <div class="panel-section">
+                <h3>曜日と時限</h3>
+                <div id="days-config"></div>
+            </div>
+        </div>
+    </div>
 
-        // Cells
-        for(let d=0; d<DAYS.length; d++) {
-            for(let p=1; p<=PERIODS; p++) {
-                const td = document.createElement('td');
-                const cellKey = `${cls}-${d}-${p}`;
-                td.id = `cell-${cellKey}`;
-                
-                // Content
-                const assignment = schedule[cellKey];
-                const teacherId = assignment ? assignment.teacherId : "";
-                
-                const select = document.createElement('select');
-                select.innerHTML = '<option value="">-</option>';
-                // Populate options (can be optimized for hundreds of cells this might be slow, but for this scale it's fine)
-                teachers.forEach(t => {
-                    const opt = document.createElement('option');
-                    opt.value = t.id;
-                    opt.textContent = t.name; // (${t.subject})
-                    if(t.id === teacherId) opt.selected = true;
-                    select.appendChild(opt);
-                });
-                
-                select.onchange = (e) => assignTeacher(cellKey, e.target.value);
-                
-                td.appendChild(select);
-                tr.appendChild(td);
+    <!-- Modal for NG -->
+    <div id="modal-ng"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; justify-content:center; align-items:center;">
+        <div
+            style="background:white; padding:20px; border-radius:5px; max-width:600px; max-height:80vh; overflow:auto;">
+            <h3>NGタイム設定</h3>
+            <div id="ng-grid-editor"></div>
+            <button onclick="closeNgModal()" style="margin-top:10px;">閉じる</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * --- Application State ---
+         */
+        const App = {
+            config: {
+                grades: 3,
+                classesPerGrade: 4,
+                hasSpecialClass: true,
+                days: [
+                    { id: 'mon', name: '月', periods: 6 },
+                    { id: 'tue', name: '火', periods: 6 },
+                    { id: 'wed', name: '水', periods: 5 },
+                    { id: 'thu', name: '木', periods: 6 },
+                    { id: 'fri', name: '金', periods: 6 }
+                ]
+            },
+            subjects: ['国語', '社会', '数学', '理科', '英語', '音楽', '美術', '体育', '技術', '家庭', '道徳', '学活', '総合'],
+
+            // Grade -> Subject -> Count
+            curriculum: {},
+
+            teachers: [], // { id, name, maxHours, subjects: [], ng: {} }
+
+            // ClassID-DayIndex-PeriodIndex -> { subject: str, teacherId: str }
+            schedule: {},
+
+            // Runtime validation results
+            errors: [],
+            stats: {
+                teacherLoad: {}, // teacherId -> count
+                classProgress: {} // classId -> subject -> count
             }
+        };
+
+        /**
+         * --- Initialization ---
+         */
+        function init() {
+            // 1. Initialize Curriculum Defaults
+            for (let g = 1; g <= App.config.grades; g++) {
+                App.curriculum[g] = {};
+                App.subjects.forEach(s => App.curriculum[g][s] = 4); // Default 4
+            }
+            App.curriculum['Special'] = {};
+            App.subjects.forEach(s => App.curriculum['Special'][s] = 2);
+
+            // 2. Initialize Dummy Teachers
+            for (let i = 1; i <= 30; i++) {
+                App.teachers.push({
+                    id: `t${i}`,
+                    name: `教員${i}`,
+                    maxHours: 18,
+                    subjects: [App.subjects[i % 5]], // Assign random primary subject
+                    ng: {}
+                });
+            }
+
+            renderAll();
         }
-        tbody.appendChild(tr);
-    });
-    table.appendChild(tbody);
-    
-    // Check conflicts after rendering
-    checkConflictsAll();
-}
 
-/**
- * Core Logic
- */
-
-function updateTeacherName(id, val) {
-    const t = teachers.find(x => x.id === id);
-    if(t) {
-        t.name = val;
-        // Re-render only selects to update names? Or full re-render?
-        // For simplicity full re-render of grid is safer but slower. 
-        // Let's just update the options in place if possible, but rendering is cheap enough here.
-        // Actually, let's just refresh the grid to reflect name changes.
-        // We need to preserve scroll position potentially, but let's stick to simple reload for now.
-        // To avoid focus loss on input, we DON'T re-render teacher list.
-        renderTimetable(); 
-    }
-}
-
-function updateTeacherSubject(id, val) {
-    const t = teachers.find(x => x.id === id);
-    if(t) t.subject = val;
-}
-
-function assignTeacher(cellKey, teacherId) {
-    if(!teacherId) {
-        delete schedule[cellKey];
-    } else {
-        schedule[cellKey] = { teacherId };
-    }
-    checkConflictsAll();
-}
-
-function checkConflictsAll() {
-    // Clear all errors first
-    document.querySelectorAll('#timetable td').forEach(td => td.classList.remove('cell-error'));
-
-    // 1. Double Booking Check
-    // Map: "TeacherID-Day-Period" -> [List of Classes]
-    const teacherScheduleMap = {};
-
-    for (const [cellKey, assignment] of Object.entries(schedule)) {
-        if (!assignment || !assignment.teacherId) continue;
-
-        const [cls, d, p] = cellKey.split('-'); // e.g. "1-1", "0", "1"
-        const timeKey = `${d}-${p}`;
-        const mapKey = `${assignment.teacherId}-${timeKey}`;
-
-        if (!teacherScheduleMap[mapKey]) {
-            teacherScheduleMap[mapKey] = [];
+        function renderAll() {
+            renderDaysConfig();
+            renderCurriculumEditor();
+            renderTeachersEditor();
+            renderTimetable(); // This triggers validation and dashboard update
         }
-        teacherScheduleMap[mapKey].push(cellKey);
-    }
 
-    // Identify duplicates
-    for (const [mapKey, cellKeys] of Object.entries(teacherScheduleMap)) {
-        if (cellKeys.length > 1) {
-            // Conflict found!
-            cellKeys.forEach(k => {
-                const el = document.getElementById(`cell-${k}`);
-                if(el) el.classList.add('cell-error');
+        /**
+         * --- Views & Navigation ---
+         */
+        function switchView(viewId) {
+            document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
+            document.getElementById(`view-${viewId}`).classList.add('active');
+
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+            // Find the tab that calls this function (naive but works for onclick)
+            // Actually let's just use text matching or update all manually
+            const tabs = document.querySelectorAll('.nav-tab');
+            if (viewId === 'timetable') tabs[0].classList.add('active');
+            if (viewId === 'curriculum') tabs[1].classList.add('active');
+            if (viewId === 'teachers') tabs[2].classList.add('active');
+            if (viewId === 'settings') tabs[3].classList.add('active');
+
+            // Re-render if needed
+            if (viewId === 'timetable') renderTimetable();
+        }
+
+        /**
+         * --- Settings Logic ---
+         */
+        function renderDaysConfig() {
+            const div = document.getElementById('days-config');
+            div.innerHTML = '';
+
+            App.config.days.forEach((d, idx) => {
+                const row = document.createElement('div');
+                row.className = 'form-group';
+                row.style.display = 'flex';
+                row.style.alignItems = 'center';
+                row.style.gap = '10px';
+
+                row.innerHTML = `
+            <label style="width:50px;">${d.name}曜日</label>
+            <input type="number" min="0" max="10" value="${d.periods}" 
+                   onchange="updateDayPeriod(${idx}, this.value)" style="width:60px;">
+            <span>時限</span>
+        `;
+                div.appendChild(row);
             });
         }
-        
-        // 2. NG Time Check
-        const [tid, dIndex, pIndex] = mapKey.split('-');
-        const teacher = teachers.find(t => t.id === tid);
-        const ngKey = `${dIndex}-${pIndex}`; // matches ng storage format
-        if(teacher && teacher.ng[ngKey]) {
-             cellKeys.forEach(k => {
-                const el = document.getElementById(`cell-${k}`);
-                if(el) el.classList.add('cell-error');
-            });
+
+        function updateDayPeriod(dayIdx, val) {
+            App.config.days[dayIdx].periods = parseInt(val);
+            renderTimetable(); // Re-render grid structure
         }
-    }
-}
 
-function autoAssign() {
-    if(!confirm("現在の空きコマに自動で教員を割り当てますか？（既存の配置は維持されます）")) return;
+        /**
+         * --- Curriculum Logic ---
+         */
+        function renderCurriculumEditor() {
+            const container = document.getElementById('curriculum-editor');
+            let html = '<table class="data-table"><thead><tr><th>学年</th>';
+            App.subjects.forEach(s => html += `<th>${s}</th>`);
+            html += '</tr></thead><tbody>';
 
-    // Simple Randomized Greedy
-    classList.forEach(cls => {
-        for(let d=0; d<DAYS.length; d++) {
-            for(let p=1; p<=PERIODS; p++) {
-                const cellKey = `${cls}-${d}-${p}`;
-                if(schedule[cellKey]) continue; // Skip filled
+            for (let g = 1; g <= App.config.grades; g++) {
+                html += `<tr><td>${g}年</td>`;
+                App.subjects.forEach(s => {
+                    const val = App.curriculum[g][s] || 0;
+                    html += `<td><input type="number" value="${val}" min="0" max="10" style="width:40px;" 
+                     onchange="updateCurriculum(${g}, '${s}', this.value)"></td>`;
+                });
+                html += '</tr>';
+            }
+            // Special class
+            html += `<tr><td>特支</td>`;
+            App.subjects.forEach(s => {
+                const val = App.curriculum['Special'][s] || 0;
+                html += `<td><input type="number" value="${val}" min="0" max="10" style="width:40px;"
+                 onchange="updateCurriculum('Special', '${s}', this.value)"></td>`;
+            });
+            html += '</tr></tbody></table>';
+            container.innerHTML = html;
+        }
 
-                // Attempt to find a valid teacher
-                // Shuffle teachers to randomize
-                const shuffled = [...teachers].sort(() => 0.5 - Math.random());
-                
-                for(const t of shuffled) {
-                    // Check NG
-                    if(t.ng[`${d}-${p}`]) continue;
+        function updateCurriculum(grade, subject, val) {
+            App.curriculum[grade][subject] = parseInt(val);
+            validateAll(); // Update stats
+        }
 
-                    // Check Double Booking
-                    // Is this teacher already working at d-p?
-                    let busy = false;
-                    for(const [existingKey, assign] of Object.entries(schedule)) {
-                        if(assign.teacherId === t.id) {
-                            const [_, ed, ep] = existingKey.split('-');
-                            if(ed == d && ep == p) {
-                                busy = true;
-                                break;
+        /**
+         * --- Teachers Logic ---
+         */
+        function renderTeachersEditor() {
+            const container = document.getElementById('teachers-editor');
+            let html = '<table class="data-table"><thead><tr><th>ID</th><th>名前</th><th>週上限</th><th>担当教科(メモ)</th><th>NG設定</th></tr></thead><tbody>';
+
+            App.teachers.forEach(t => {
+                html += `<tr>
+            <td>${t.id}</td>
+            <td><input type="text" value="${t.name}" onchange="updateTeacher('${t.id}', 'name', this.value)"></td>
+            <td><input type="number" value="${t.maxHours}" onchange="updateTeacher('${t.id}', 'maxHours', this.value)" style="width:50px;"></td>
+            <td><input type="text" value="${t.subjects.join(',')}" onchange="updateTeacher('${t.id}', 'subjects', this.value)"></td>
+            <td><button onclick="openNgModal('${t.id}')">NG設定</button></td>
+        </tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function updateTeacher(id, field, val) {
+            const t = App.teachers.find(x => x.id === id);
+            if (!t) return;
+            if (field === 'maxHours') t.maxHours = parseInt(val);
+            else if (field === 'subjects') t.subjects = val.split(',').map(s => s.trim());
+            else t[field] = val;
+            validateAll();
+        }
+
+        /**
+         * --- Main Timetable Logic ---
+         */
+        function renderTimetable() {
+            validateAll(); // Ensure stats are fresh
+
+            const table = document.getElementById('schedule-grid');
+            table.innerHTML = '';
+
+            // Headers
+            const thead = document.createElement('thead');
+
+            // Row 1: Days
+            const tr1 = document.createElement('tr');
+            tr1.innerHTML = '<th class="corner-header" rowspan="2">クラス</th>';
+            App.config.days.forEach(d => {
+                const th = document.createElement('th');
+                th.colSpan = d.periods;
+                th.textContent = d.name;
+                tr1.appendChild(th);
+            });
+            thead.appendChild(tr1);
+
+            // Row 2: Periods
+            const tr2 = document.createElement('tr');
+            App.config.days.forEach(d => {
+                for (let p = 1; p <= d.periods; p++) {
+                    const th = document.createElement('th');
+                    th.textContent = p;
+                    tr2.appendChild(th);
+                }
+            });
+            thead.appendChild(tr2);
+            table.appendChild(thead);
+
+            // Body
+            const tbody = document.createElement('tbody');
+            const classes = getClassList();
+
+            classes.forEach(cls => {
+                const tr = document.createElement('tr');
+                // Sticky Row Header
+                const rh = document.createElement('td'); // Changed to td but styled as header to fix sticky issues sometimes
+                rh.className = 'row-header';
+                rh.textContent = cls;
+                tr.appendChild(rh);
+
+                // Cells
+                App.config.days.forEach((d, dIdx) => {
+                    for (let p = 1; p <= d.periods; p++) {
+                        const td = document.createElement('td');
+                        const key = `${cls}-${dIdx}-${p}`;
+
+                        // Get Assignment
+                        const assign = App.schedule[key] || { subject: '', teacherId: '' };
+
+                        // Check Errors for this cell
+                        const cellErrors = App.errors.filter(e => e.key === key);
+                        if (cellErrors.length > 0) {
+                            td.classList.add('cell-error');
+                            td.title = cellErrors.map(e => e.msg).join('\n');
+                        }
+
+                        // Render Inner
+                        const div = document.createElement('div');
+                        div.className = 'cell-inner';
+
+                        // Subject Select
+                        const selSub = document.createElement('select');
+                        selSub.innerHTML = '<option value="">(教科)</option>';
+                        App.subjects.forEach(s => {
+                            const opt = document.createElement('option');
+                            opt.value = s;
+                            opt.textContent = s;
+                            if (s === assign.subject) opt.selected = true;
+                            selSub.appendChild(opt);
+                        });
+                        selSub.onchange = (e) => updateSchedule(key, 'subject', e.target.value);
+
+                        // Teacher Select
+                        const selTeach = document.createElement('select');
+                        selTeach.innerHTML = '<option value="">(教員)</option>';
+                        App.teachers.forEach(t => {
+                            const opt = document.createElement('option');
+                            opt.value = t.id;
+                            opt.textContent = t.name;
+                            if (t.id === assign.teacherId) opt.selected = true;
+                            selTeach.appendChild(opt);
+                        });
+                        selTeach.onchange = (e) => updateSchedule(key, 'teacherId', e.target.value);
+
+                        // NG Visual Check (if teacher selected)
+                        if (assign.teacherId) {
+                            const t = App.teachers.find(x => x.id === assign.teacherId);
+                            if (t && t.ng[`${dIdx}-${p}`]) {
+                                td.classList.add('cell-error'); // NG conflict
                             }
                         }
+
+                        div.appendChild(selSub);
+                        div.appendChild(selTeach);
+                        td.appendChild(div);
+                        tr.appendChild(td);
                     }
-                    if(busy) continue;
-
-                    // Assign
-                    schedule[cellKey] = { teacherId: t.id };
-                    break; // Move to next cell
-                }
-            }
-        }
-    });
-    
-    renderTimetable();
-}
-
-function resetSchedule() {
-    if(confirm("全ての配置をクリアしますか？")) {
-        schedule = {};
-        renderTimetable();
-    }
-}
-
-function exportCSV() {
-    let csv = "曜日,時限," + classList.join(",") + "\n";
-    
-    for(let d=0; d<DAYS.length; d++) {
-        for(let p=1; p<=PERIODS; p++) {
-            let row = `${DAYS[d]},${p}限`;
-            classList.forEach(cls => {
-                const cellKey = `${cls}-${d}-${p}`;
-                const assign = schedule[cellKey];
-                let val = "";
-                if(assign) {
-                    const t = teachers.find(x => x.id === assign.teacherId);
-                    if(t) val = t.name;
-                }
-                row += `,${val}`;
+                });
+                tbody.appendChild(tr);
             });
-            csv += row + "\n";
+            table.appendChild(tbody);
         }
-    }
-    
-    // Download Blob
-    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv' }); // BOM for Excel
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'timetable.csv';
-    a.click();
-}
 
-
-/**
- * NG Modal Logic
- */
-let currentNgTeacherId = null;
-
-function openNgModal(teacherId) {
-    currentNgTeacherId = teacherId;
-    const t = teachers.find(x => x.id === teacherId);
-    if(!t) return;
-    
-    document.getElementById('ng-modal-title').textContent = `${t.name} のNG設定`;
-    document.getElementById('ng-modal').style.display = 'flex';
-    renderNgGrid(t);
-}
-
-function closeNgModal() {
-    document.getElementById('ng-modal').style.display = 'none';
-    currentNgTeacherId = null;
-    checkConflictsAll(); // Re-check in case NG changed affecting current schedule
-}
-
-function renderNgGrid(teacher) {
-    const container = document.getElementById('ng-grid');
-    container.innerHTML = '';
-    
-    // Header Row
-    const empty = document.createElement('div');
-    empty.className = 'ng-cell header';
-    container.appendChild(empty);
-    
-    for(let p=1; p<=PERIODS; p++) {
-        const h = document.createElement('div');
-        h.className = 'ng-cell header';
-        h.textContent = `${p}限`;
-        container.appendChild(h);
-    }
-    
-    // Rows
-    DAYS.forEach((dayName, dIndex) => {
-        const dayHeader = document.createElement('div');
-        dayHeader.className = 'ng-cell header';
-        dayHeader.textContent = dayName;
-        container.appendChild(dayHeader);
-        
-        for(let p=1; p<=PERIODS; p++) {
-            const cell = document.createElement('div');
-            const key = `${dIndex}-${p}`;
-            cell.className = 'ng-cell';
-            if(teacher.ng[key]) {
-                cell.classList.add('selected');
-                cell.textContent = "NG";
-            } else {
-                cell.textContent = "-";
+        function getClassList() {
+            const list = [];
+            for (let g = 1; g <= App.config.grades; g++) {
+                for (let c = 1; c <= App.config.classesPerGrade; c++) list.push(`${g}-${c}`);
             }
-            
-            cell.onclick = () => toggleNg(teacher, key, cell);
-            container.appendChild(cell);
+            if (App.config.hasSpecialClass) list.push("特支");
+            return list;
         }
-    });
-}
 
-function toggleNg(teacher, key, cellEl) {
-    if(teacher.ng[key]) {
-        delete teacher.ng[key];
-        cellEl.classList.remove('selected');
-        cellEl.textContent = "-";
-    } else {
-        teacher.ng[key] = true;
-        cellEl.classList.add('selected');
-        cellEl.textContent = "NG";
-    }
-}
+        function updateSchedule(key, field, val) {
+            if (!App.schedule[key]) App.schedule[key] = { subject: '', teacherId: '' };
+            App.schedule[key][field] = val;
 
-</script>
+            // Auto-remove if empty
+            if (!App.schedule[key].subject && !App.schedule[key].teacherId) {
+                delete App.schedule[key];
+            }
+
+            // If subject changed, maybe try to auto-set teacher based on logic? 
+            // (Skipped for simplicity, user manually selects)
+
+            renderTimetable(); // Full re-render to update validation colors
+        }
+
+        /**
+         * --- Validation & Stats ---
+         */
+        function validateAll() {
+            App.errors = [];
+            App.stats.teacherLoad = {};
+            App.stats.classProgress = {};
+
+            // Init Stats
+            App.teachers.forEach(t => App.stats.teacherLoad[t.id] = 0);
+            const classList = getClassList();
+            classList.forEach(c => App.stats.classProgress[c] = {});
+
+            // Loop Schedule
+            const teacherUsage = {}; // "tID-day-per" -> [class]
+
+            for (const [key, assign] of Object.entries(App.schedule)) {
+                if (!assign.subject && !assign.teacherId) continue;
+
+                const [cls, d, p] = key.split('-');
+
+                // 1. Double Booking
+                if (assign.teacherId) {
+                    const timeKey = `${assign.teacherId}-${d}-${p}`;
+                    if (!teacherUsage[timeKey]) teacherUsage[timeKey] = [];
+                    teacherUsage[timeKey].push(key);
+
+                    // NG Check
+                    const t = App.teachers.find(x => x.id === assign.teacherId);
+                    if (t && t.ng[`${d}-${p}`]) {
+                        App.errors.push({ key, msg: `NG: ${t.name}はこの時間は授業不可です` });
+                    }
+
+                    // Load Count
+                    App.stats.teacherLoad[assign.teacherId]++;
+                }
+
+                // 2. Curriculum Count
+                if (assign.subject) {
+                    if (!App.stats.classProgress[cls][assign.subject]) App.stats.classProgress[cls][assign.subject] = 0;
+                    App.stats.classProgress[cls][assign.subject]++;
+                }
+            }
+
+            // Process Double Bookings
+            for (const [tKey, keys] of Object.entries(teacherUsage)) {
+                if (keys.length > 1) {
+                    keys.forEach(k => App.errors.push({ key: k, msg: "重複: 同じ教員が複数のクラスに配置されています" }));
+                }
+            }
+
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            const div = document.getElementById('dashboard-stats');
+            div.innerHTML = '';
+
+            // 1. Errors Summary
+            if (App.errors.length > 0) {
+                const d = document.createElement('div');
+                d.className = 'dash-item alert';
+                d.textContent = `⚠️ エラーが ${App.errors.length} 件あります`;
+                div.appendChild(d);
+            }
+
+            // 2. Teacher Overwork
+            let overworkCount = 0;
+            App.teachers.forEach(t => {
+                const load = App.stats.teacherLoad[t.id] || 0;
+                if (load > t.maxHours) {
+                    const d = document.createElement('div');
+                    d.className = 'dash-item alert';
+                    d.textContent = `${t.name}: ${load}/${t.maxHours}時間 (超過)`;
+                    div.appendChild(d);
+                    overworkCount++;
+                }
+            });
+
+            // 3. Curriculum Status (Simplified View)
+            // Just show total "Unmet" subjects
+            let unmetCount = 0;
+            const classes = getClassList();
+            classes.forEach(cls => {
+                const grade = cls === '特支' ? 'Special' : cls.split('-')[0];
+                App.subjects.forEach(sub => {
+                    const required = App.curriculum[grade][sub] || 0;
+                    const actual = (App.stats.classProgress[cls] && App.stats.classProgress[cls][sub]) || 0;
+                    if (actual < required) unmetCount++;
+                });
+            });
+
+            const d2 = document.createElement('div');
+            d2.className = `dash-item ${unmetCount > 0 ? 'warn' : ''}`;
+            d2.textContent = `不足カリキュラム: ${unmetCount}件`;
+            div.appendChild(d2);
+        }
+
+
+        /**
+         * --- Auto Assign (Naive) ---
+         */
+        function autoAssignNaive() {
+            if (!confirm("空きコマを自動で埋めますか？（ランダム配置）")) return;
+
+            const classes = getClassList();
+            classes.forEach(cls => {
+                const grade = cls === '特支' ? 'Special' : cls.split('-')[0];
+
+                App.subjects.forEach(sub => {
+                    let required = App.curriculum[grade][sub] || 0;
+                    let current = (App.stats.classProgress[cls] && App.stats.classProgress[cls][sub]) || 0;
+                    let needed = required - current;
+
+                    if (needed <= 0) return;
+
+                    // Try to find slots
+                    for (let loop = 0; loop < 100; loop++) { // Safety break
+                        if (needed <= 0) break;
+
+                        // Pick random day/period
+                        const dIdx = Math.floor(Math.random() * App.config.days.length);
+                        const p = Math.floor(Math.random() * App.config.days[dIdx].periods) + 1;
+                        const key = `${cls}-${dIdx}-${p}`;
+
+                        if (App.schedule[key]) continue; // Occupied
+
+                        // Find valid teacher
+                        // 1. Teaches subject?
+                        // 2. Not NG?
+                        // 3. No double booking?
+                        // 4. Not Overworked?
+
+                        const candidates = App.teachers.filter(t => {
+                            if (!t.subjects.includes(sub) && t.subjects[0] !== 'その他') return false; // Basic capability check
+                            if (t.ng[`${dIdx}-${p}`]) return false;
+
+                            // Check Double Booking
+                            // Naive check against current schedule state in memory
+                            // (Ideally we iterate app.schedule but that's slow inside loop. 
+                            //  For small n strictly checking schedule map is okay)
+                            const isBusy = Object.entries(App.schedule).some(([k, v]) => {
+                                const [_, ed, ep] = k.split('-');
+                                return v.teacherId === t.id && parseInt(ed) === dIdx && parseInt(ep) === p;
+                            });
+
+                            if (isBusy) return false;
+
+                            const load = App.stats.teacherLoad[t.id] || 0;
+                            if (load >= t.maxHours) return false;
+
+                            return true;
+                        });
+
+                        if (candidates.length > 0) {
+                            const t = candidates[Math.floor(Math.random() * candidates.length)];
+                            App.schedule[key] = { subject: sub, teacherId: t.id };
+                            App.stats.teacherLoad[t.id] = (App.stats.teacherLoad[t.id] || 0) + 1;
+                            needed--;
+                        }
+                    }
+                });
+            });
+
+            renderTimetable();
+        }
+
+        function clearSchedule() {
+            if (confirm("全てのコマを消去しますか？")) {
+                App.schedule = {};
+                renderTimetable();
+            }
+        }
+
+        function exportCSV() {
+            let csv = "ClassName,Day,Period,Subject,Teacher\n";
+            Object.entries(App.schedule).forEach(([key, val]) => {
+                const [cls, d, p] = key.split('-');
+                const dayName = App.config.days[d].name;
+                const teacher = App.teachers.find(t => t.id === val.teacherId);
+                const tName = teacher ? teacher.name : val.teacherId;
+                csv += `${cls},${dayName},${p},${val.subject},${tName}\n`;
+            });
+
+            const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'timetable_full.csv';
+            a.click();
+        }
+
+        /**
+         * --- NG Modal ---
+         */
+        let currentNgTID = null;
+        function openNgModal(tid) {
+            currentNgTID = tid;
+            const t = App.teachers.find(x => x.id === tid);
+            const container = document.getElementById('ng-grid-editor');
+            document.getElementById('modal-ng').style.display = 'flex';
+
+            let html = '<div style="display:grid; grid-template-columns:repeat(7, 1fr); gap:5px;">';
+            // Headers
+            html += '<div></div>';
+            for (let p = 1; p <= 6; p++) html += `<div style="background:#eee;text-align:center;">${p}限</div>`;
+
+            App.config.days.forEach((d, dIdx) => {
+                html += `<div style="background:#eee;text-align:center;">${d.name}</div>`;
+                for (let p = 1; p <= 6; p++) {
+                    if (p > d.periods) {
+                        html += `<div style="background:#ccc;">-</div>`;
+                    } else {
+                        const key = `${dIdx}-${p}`;
+                        const isNg = t.ng[key];
+                        html += `<div onclick="toggleNg('${key}')" 
+                              style="border:1px solid #ccc; text-align:center; cursor:pointer; background:${isNg ? '#ff9800' : 'white'}; color:${isNg ? 'white' : 'black'};">
+                              ${isNg ? 'NG' : '-'}
+                         </div>`;
+                    }
+                }
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function toggleNg(key) {
+            const t = App.teachers.find(x => x.id === currentNgTID);
+            if (t.ng[key]) delete t.ng[key];
+            else t.ng[key] = true;
+            openNgModal(currentNgTID); // re-render
+            // Note: Main grid won't update until modal closed or manually called
+        }
+
+        function closeNgModal() {
+            document.getElementById('modal-ng').style.display = 'none';
+            currentNgTID = null;
+            renderTimetable();
+        }
+
+        // Start
+        init();
+
+    </script>
 </body>
+
 </html>
