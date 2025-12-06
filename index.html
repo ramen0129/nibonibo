@@ -609,7 +609,7 @@
                 App.config.days.forEach((d, dIdx) => {
                     for (let p = 1; p <= d.periods; p++) {
                         const td = document.createElement('td');
-                        const key = `${cls}-${dIdx}-${p}`;
+                        const key = `${cls}_${dIdx}_${p}`;
 
                         // Get Assignment
                         const assign = App.schedule[key] || { subject: '', teacherId: '' };
@@ -711,7 +711,7 @@
             for (const [key, assign] of Object.entries(App.schedule)) {
                 if (!assign.subject && !assign.teacherId) continue;
 
-                const [cls, d, p] = key.split('-');
+                const [cls, d, p] = key.split('_');
 
                 // 1. Double Booking
                 if (assign.teacherId) {
@@ -815,7 +815,7 @@
                         // Pick random day/period
                         const dIdx = Math.floor(Math.random() * App.config.days.length);
                         const p = Math.floor(Math.random() * App.config.days[dIdx].periods) + 1;
-                        const key = `${cls}-${dIdx}-${p}`;
+                        const key = `${cls}_${dIdx}_${p}`;
 
                         if (App.schedule[key]) continue; // Occupied
 
@@ -834,7 +834,7 @@
                             // (Ideally we iterate app.schedule but that's slow inside loop. 
                             //  For small n strictly checking schedule map is okay)
                             const isBusy = Object.entries(App.schedule).some(([k, v]) => {
-                                const [_, ed, ep] = k.split('-');
+                                const [_, ed, ep] = k.split('_');
                                 return v.teacherId === t.id && parseInt(ed) === dIdx && parseInt(ep) === p;
                             });
 
@@ -869,7 +869,7 @@
         function exportCSV() {
             let csv = "ClassName,Day,Period,Subject,Teacher\n";
             Object.entries(App.schedule).forEach(([key, val]) => {
-                const [cls, d, p] = key.split('-');
+                const [cls, d, p] = key.split('_');
                 const dayName = App.config.days[d].name;
                 const teacher = App.teachers.find(t => t.id === val.teacherId);
                 const tName = teacher ? teacher.name : val.teacherId;
